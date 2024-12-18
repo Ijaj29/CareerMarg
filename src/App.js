@@ -78,8 +78,12 @@ function App() {
       },
     };
 
-    const paymentObject = new window.Razorpay(options);
-    paymentObject.open();
+    if (typeof window.Razorpay !== "undefined") {
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } else {
+      console.error("Razorpay script not loaded yet!");
+    }
   };
 
   const paymentFetch = (e) => {
