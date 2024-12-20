@@ -1,72 +1,133 @@
 import "./App.css";
 import axios from "axios";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import logo from "./logo.jpeg";
+import Swal from "sweetalert2";
+import flasher from "@flasher/flasher";
 
 function App() {
   const [responseId, setResponseId] = React.useState("");
   const [responseState, setResponseState] = React.useState([]);
+  const [registered, setRegistered] = useState(false);
+  const [formInfo, setFormInfo] = useState({
+    studName: "",
+    email: "",
+    mobile: "",
+    company: "",
+  });
+  const [errors, setError] = useState("");
+  const FRONTEND_URL = "https://career-marg.vercel.app/";
+  const BACKEND_URL = "https://student-backend-c616.onrender.com/";
+
+  const [File, setFile] = useState("");
+
+  const handleImg = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleInput = (e) => {
+    setFormInfo({
+      ...formInfo,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("studName", formInfo.studName);
+    formData.append("email", formInfo.email);
+    formData.append("mobile", formInfo.mobile);
+    formData.append("company", formInfo.company);
+    formData.append("file", File);
+    try {
+      const response = await axios.post(
+        "https://student-backend-c616.onrender.com/api/student",
+        formData
+      );
+      if (response.data.error) {
+        setError(response.data.error);
+      } else {
+        // window.alert(response.data.status);
+        console.log("response.data.status :", response.data.status);
+        // window.location.reload();
+        Swal.fire({
+          title: "Student Registered Successful",
+          // text: "You won't be able to revert this!",
+          icon: "success",
+          // showCancelButton: true,
+          confirmButtonColor: "green",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Payment",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            createRazorpayOrder();
+            setRegistered(true);
+            setFile("");
+            setFormInfo({
+              studName: "",
+              email: "",
+              mobile: "",
+              company: "",
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const paymentFetch = async (paymentId) => {
+    await axios
+      .get(`https://student-backend-c616.onrender.com/payment/${paymentId}`)
+      .then((response) => {
+        setResponseState(response.data);
+        if (response.data) {
+          if (response.data.status == "authorized") {
+            flasher.success("Payment Successfully");
+          } else {
+            flasher.warning("Error Unauthorized User Payment");
+            setError("Unauthorized User Payment");
+          }
+        }
+      })
+      .catch((error) => {
+        console.log("error occures", error);
+      });
+  };
 
   const loadScript = (src) => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
-
       script.src = src;
-
       script.onload = () => {
         resolve(true);
       };
       script.onerror = () => {
         resolve(false);
       };
-
       document.body.appendChild(script);
     });
   };
 
-  // const createRazorpayOrder = (amount) => {
-  //   let data = JSON.stringify({
-  //     amount: amount * 100,
-  //     currency: "INR",
-  //   });
-
-  //   let config = {
-  //     method: "post",
-  //     maxBodyLength: Infinity,
-  //     url: "http://localhost:5000/orders",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     data: data,
-  //   };
-
-  //   axios
-  //     .request(config)
-  //     .then((response) => {
-  //       console.log(JSON.stringify(response.data));
-  //       handleRazorpayScreen(response.data.amount);
-  //     })
-  //     .catch((error) => {
-  //       console.log("error at", error);
-  //     });
-  // };
-
-  const handleRazorpayScreen = async () => {
+  const handleRazorpayScreen = async (amount) => {
     const res = await loadScript("https:/checkout.razorpay.com/v1/checkout.js");
-
     if (!res) {
       alert("Some error at razorpay screen loading");
       return;
     }
-
     const options = {
-      key: "rzp_live_mrweB6v6mx5SSc",
-      amount: 100,
+      key: "rzp_live_ojIqx1hLEKLYmC",
+      amount: amount,
       currency: "INR",
       name: "Institute",
       description: "payment to Institute",
       image: logo,
       handler: function (response) {
+        if (response) {
+          paymentFetch(response.razorpay_payment_id);
+        }
         setResponseId(response.razorpay_payment_id);
       },
       prefill: {
@@ -74,7 +135,7 @@ function App() {
         email: "ijaj.jaman08@gmail.com",
       },
       theme: {
-        color: "#F4C430",
+        color: "#61dafb",
       },
     };
 
@@ -82,52 +143,37 @@ function App() {
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
     } else {
-      console.error("Razorpay script not loaded yet!");
+      flasher.warning("Razorpay script not loaded yet!");
     }
   };
 
-  // const paymentFetch = (e) => {
-  //   e.preventDefault();
+  const createRazorpayOrder = () => {
+    let data = JSON.stringify({
+      amount: 1 * 100,
+      currency: "INR",
+    });
+    let config = {
+      method: "post",
+      maxBodyLength: Infinity,
+      url: "https://student-backend-c616.onrender.com/orders",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
 
-  //   const paymentId = e.target.paymentId.value;
-
-  //   axios
-  //     .get(`http://localhost:5000/payment/${paymentId}`)
-  //     .then((response) => {
-  //       console.log(response.data);
-  //       setResponseState(response.data);
-  //     })
-  //     .catch((error) => {
-  //       console.log("error occures", error);
-  //     });
-  // };
-
-  // useEffect(() => {
-  //   let data = JSON.stringify({
-  //     amount: amount * 100,
-  //   })
-
-  //   let config = {
-  //     method: "post",
-  //     maxBodyLength: Infinity,
-  //     url: `http://localhost:5000/capture/${responseId}`,
-  //     headers: {
-  //       'Content-Type': 'application/json'
-  //     },
-  //     data: data
-  //   }
-
-  //   axios.request(config)
-  //   .then((response) => {
-  //     console.log(JSON.stringify(response.data))
-  //   })
-  //   .catch((error) => {
-  //     console.log("error at", error)
-  //   })
-  // }, [responseId])
+    axios
+      .request(config)
+      .then((response) => {
+        handleRazorpayScreen(response.data.amount);
+      })
+      .catch((error) => {
+        console.log("error at", error);
+      });
+  };
 
   return (
-    <div className="App container">
+    <div className="App">
       <header>
         <img src={logo} alt="AIYSRA Logo" />
         <h1>ऑल इंडिया यंग सायंटिस्ट रिसर्च असोसिएशन</h1>
@@ -170,28 +216,124 @@ function App() {
           </p>
           <p>ही सुवर्णसंधी मोफत तुमच्यासाठी उपलब्ध आहे!</p>
           <p>तुमच्या यशस्वी भविष्यासाठी पहिलं पाऊल आम्ही घ्यायला मदत करू. 💡</p>
-          <a className="button" onClick={() => handleRazorpayScreen()}>
-            आजच नाव बुक करा
-          </a>
+
+          {!registered ? (
+            <div className="row justify-content-center">
+              <h4 className="text-center mt-2">Registration Form</h4>
+              <div className="shadow p-4 border mt-4">
+                <form onSubmit={(e) => handleSubmit(e)}>
+                  <div className="row">
+                    <div className="mb-3 col-sm-6">
+                      <label htmlFor="studName" className="form-label">
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formInfo.studName}
+                        onChange={(e) => handleInput(e)}
+                        id="studName"
+                        required
+                        name="studName"
+                        placeholder="Enter Name"
+                      />
+                    </div>
+                    <div className="mb-3 col-sm-6">
+                      <label htmlFor="email" className="form-label">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        className="form-control"
+                        onChange={(e) => handleInput(e)}
+                        value={formInfo.email}
+                        id="email"
+                        required
+                        name="email"
+                        placeholder="Enter Email"
+                      />
+                    </div>
+                    <div className="mb-3 col-sm-6">
+                      <label htmlFor="mobile" className="form-label">
+                        Mobile Number
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        id="mobile"
+                        onChange={(e) => handleInput(e)}
+                        required
+                        name="mobile"
+                        value={formInfo.mobile}
+                        placeholder="Enter Mobile No."
+                      />
+                    </div>
+                    <div className="mb-3 col-sm-6">
+                      <label htmlFor="company" className="form-label">
+                        College
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="company"
+                        onChange={(e) => handleInput(e)}
+                        required
+                        value={formInfo.company}
+                        name="company"
+                        placeholder="Enter Company Name"
+                      />
+                    </div>
+                    <div className="mb-3 col-sm-6">
+                      <img
+                        src={
+                          File
+                            ? File.name
+                              ? URL.createObjectURL(File)
+                              : BACKEND_URL + File
+                            : FRONTEND_URL + "/assets/noimage.png"
+                        }
+                        alt="profile"
+                        width="150px"
+                        height="150px"
+                        className="mb-2"
+                      />
+                      <input
+                        type="file"
+                        className="form-control"
+                        id="file"
+                        onChange={(e) => handleImg(e)}
+                        name="file"
+                      />
+                    </div>
+                    <div className="mb-3 col-sm-6"></div>
+                    <div className="mb-3 col-sm-3"></div>
+
+                    <button className="btn btn-success col-sm-6" type="submit">
+                      आजच नाव बुक करा
+                    </button>
+                    <div className="mb-3 col-sm-3"></div>
+                  </div>
+                  <p className="text-danger">
+                    {typeof errors == "string" && errors}
+                  </p>
+                </form>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => createRazorpayOrder()}
+              className="btn btn-success col-sm-6"
+              type="submit"
+            >
+              Pay to Confirm
+            </button>
+          )}
         </div>
       </div>
-      {/* <button onClick={() => handleRazorpayScreen()}>Payment of 100Rs.</button> */}
-      {/* {responseId && <p>{responseId}</p>}
-      <h1>This is payment verification form</h1>
-      <form onSubmit={paymentFetch}>
-        <input type="text" name="paymentId" />
-        <button type="submit">Fetch Payment</button>
-        {responseState.length !== 0 && (
-          <ul>
-            <li>Amount: {responseState.amount / 100} Rs.</li>
-            <li>Currency: {responseState.currency}</li>
-            <li>Status: {responseState.status}</li>
-            <li>Method: {responseState.method}</li>
-          </ul>
-        )}
-      </form> */}
     </div>
   );
 }
 
 export default App;
+
+// 1. pay_PZOYMvOb0MMBiQ
