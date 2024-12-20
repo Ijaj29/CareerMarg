@@ -42,6 +42,7 @@ function App() {
     formData.append("email", formInfo.email);
     formData.append("mobile", formInfo.mobile);
     formData.append("company", formInfo.company);
+    formData.append("paystatus", formInfo.paystatus);
     formData.append("file", File);
     try {
       const response = await axios.post(
@@ -52,6 +53,7 @@ function App() {
         setError(response.data.error);
       } else {
         id = response.data._id;
+        localStorage.setItem("studid", response.data._id);
         Swal.fire({
           title: "Student Registered Successful",
           // text: "You won't be able to revert this!",
@@ -95,6 +97,8 @@ function App() {
       );
       flasher.success("Edited Successfully");
       localStorage.setItem("registered", false);
+      localStorage.setItem("studid", "");
+      id = "";
       setRegistered(false);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -198,6 +202,7 @@ function App() {
 
   useEffect(() => {
     setRegistered(localStorage.getItem("registered"));
+    id = localStorage.getItem("studid");
   }, []);
 
   return (
