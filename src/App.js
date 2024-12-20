@@ -9,17 +9,20 @@ function App() {
   const [responseId, setResponseId] = React.useState("");
   const [responseState, setResponseState] = React.useState([]);
   const [registered, setRegistered] = useState(false);
+  const [errors, setError] = useState("");
+  const [File, setFile] = useState("");
+
   const [formInfo, setFormInfo] = useState({
     studName: "",
     email: "",
     mobile: "",
     company: "",
+    paystatus: "UnPaid",
   });
-  const [errors, setError] = useState("");
+
+  let id = "";
   const FRONTEND_URL = "https://career-marg.vercel.app/";
   const BACKEND_URL = "https://student-backend-c616.onrender.com/";
-
-  const [File, setFile] = useState("");
 
   const handleImg = (e) => {
     setFile(e.target.files[0]);
@@ -48,9 +51,7 @@ function App() {
       if (response.data.error) {
         setError(response.data.error);
       } else {
-        // window.alert(response.data.status);
-        console.log("response.data.status :", response.data.status);
-        // window.location.reload();
+        id = response.data._id;
         Swal.fire({
           title: "Student Registered Successful",
           // text: "You won't be able to revert this!",
@@ -63,6 +64,7 @@ function App() {
           if (result.isConfirmed) {
             createRazorpayOrder();
             setRegistered(true);
+            localStorage.setItem("registered", true);
             setFile("");
             setFormInfo({
               studName: "",
@@ -78,6 +80,27 @@ function App() {
     }
   };
 
+  const handleUpdate = async () => {
+    const formData = new FormData();
+    formData.append("studName", formInfo.studName);
+    formData.append("email", formInfo.email);
+    formData.append("mobile", formInfo.mobile);
+    formData.append("company", formInfo.company);
+    formData.append("paystatus", "Paid");
+    formData.append("file", File);
+    try {
+      await axios.put(
+        `https://student-backend-c616.onrender.com/api/student/${id}`,
+        formData
+      );
+      flasher.success("Edited Successfully");
+      localStorage.setItem("registered", false);
+      setRegistered(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   const paymentFetch = async (paymentId) => {
     await axios
       .get(`https://student-backend-c616.onrender.com/payment/${paymentId}`)
@@ -86,6 +109,7 @@ function App() {
         if (response.data) {
           if (response.data.status == "authorized") {
             flasher.success("Payment Successfully");
+            handleUpdate();
           } else {
             flasher.warning("Error Unauthorized User Payment");
             setError("Unauthorized User Payment");
@@ -171,6 +195,10 @@ function App() {
         console.log("error at", error);
       });
   };
+
+  useEffect(() => {
+    setRegistered(localStorage.getItem("registered"));
+  }, []);
 
   return (
     <div className="App">
@@ -322,7 +350,7 @@ function App() {
           ) : (
             <button
               onClick={() => createRazorpayOrder()}
-              className="btn btn-success col-sm-6"
+              className="btn btn-success col-sm-6 m-auto"
               type="submit"
             >
               Pay to Confirm
