@@ -58,7 +58,7 @@ function App() {
       } else {
         console.log('response.data :', response.data);
         setId(response.data._id);
-        localStorage.setItem("studid", response.data._id);
+        localStorage.setItem("studid", response.data.data._id);
         setRegistered("Complete");
         localStorage.setItem("registered", "Complete");
         setFile("");
@@ -69,8 +69,8 @@ function App() {
           company: "",
         });
         Swal.fire({
-          title: "Student Registered Successful",
-          // text: "You won't be able to revert this!",
+          title: "Registered Successful",
+          text: "Make the Payment to confirm seat!",
           icon: "success",
           // showCancelButton: true,
           confirmButtonColor: "green",
