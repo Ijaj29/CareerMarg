@@ -8,7 +8,9 @@ import flasher from "@flasher/flasher";
 function App() {
   const [responseId, setResponseId] = React.useState("");
   const [responseState, setResponseState] = React.useState([]);
-  const [registered, setRegistered] = useState(false);
+  const [registered, setRegistered] = useState("Incomplete");
+  console.log("registered :", registered);
+  const [id, setId] = useState("");
   const [errors, setError] = useState("");
   const [File, setFile] = useState("");
 
@@ -20,7 +22,6 @@ function App() {
     paystatus: "UnPaid",
   });
 
-  let id = "";
   const FRONTEND_URL = "https://career-marg.vercel.app/";
   const BACKEND_URL = "https://student-backend-c616.onrender.com/";
 
@@ -52,8 +53,17 @@ function App() {
       if (response.data.error) {
         setError(response.data.error);
       } else {
-        id = response.data._id;
+        setId(response.data._id);
         localStorage.setItem("studid", response.data._id);
+        setRegistered("Complete");
+        localStorage.setItem("registered", "Complete");
+        setFile("");
+        setFormInfo({
+          studName: "",
+          email: "",
+          mobile: "",
+          company: "",
+        });
         Swal.fire({
           title: "Student Registered Successful",
           // text: "You won't be able to revert this!",
@@ -65,15 +75,6 @@ function App() {
         }).then(async (result) => {
           if (result.isConfirmed) {
             createRazorpayOrder();
-            setRegistered(true);
-            localStorage.setItem("registered", true);
-            setFile("");
-            setFormInfo({
-              studName: "",
-              email: "",
-              mobile: "",
-              company: "",
-            });
           }
         });
       }
@@ -84,38 +85,46 @@ function App() {
 
   const handleUpdate = async () => {
     const formData = new FormData();
-    formData.append("studName", formInfo.studName);
-    formData.append("email", formInfo.email);
-    formData.append("mobile", formInfo.mobile);
-    formData.append("company", formInfo.company);
+    // formData.append("studName", formInfo.studName);
+    // formData.append("email", formInfo.email);
+    // formData.append("mobile", formInfo.mobile);
+    // formData.append("company", formInfo.company);
     formData.append("paystatus", "Paid");
-    formData.append("file", File);
+    formData.append("responseId", responseId);
+    // formData.append("file", File);
     try {
-      await axios.put(
+      const response = await axios.put(
         `https://student-backend-c616.onrender.com/api/student/${id}`,
         formData
       );
-      flasher.success("Edited Successfully");
-      localStorage.setItem("registered", false);
-      localStorage.setItem("studid", "");
-      id = "";
-      setRegistered(false);
+
+      if (response.data.status == "Updated Successfully") {
+        // alert("Edited Successfully");
+        localStorage.setItem("studid", "");
+        setId("");
+        setResponseId("");
+        setRegistered("Incomplete");
+      } else {
+        setError(response.data.error);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
 
-  const paymentFetch = async (paymentId) => {
+  const paymentFetch = async () => {
     await axios
-      .get(`https://student-backend-c616.onrender.com/payment/${paymentId}`)
+      .get(`https://student-backend-c616.onrender.com/payment/${responseId}`)
       .then((response) => {
         setResponseState(response.data);
         if (response.data) {
           if (response.data.status == "authorized") {
-            flasher.success("Payment Successfully");
+            alert("Payment Successfully");
             handleUpdate();
+            localStorage.setItem("registered", "Incomplete");
+            setRegistered("Incomplete");
           } else {
-            flasher.warning("Error Unauthorized User Payment");
+            alert("Error Unauthorized User Payment");
             setError("Unauthorized User Payment");
           }
         }
@@ -153,9 +162,9 @@ function App() {
       description: "payment to Institute",
       image: logo,
       handler: function (response) {
-        if (response) {
-          paymentFetch(response.razorpay_payment_id);
-        }
+        //  if (response) {
+        //   paymentFetch(response.razorpay_payment_id);
+        // }
         setResponseId(response.razorpay_payment_id);
       },
       prefill: {
@@ -171,11 +180,11 @@ function App() {
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
     } else {
-      flasher.warning("Razorpay script not loaded yet!");
+      alert("Razorpay script not loaded yet!");
     }
   };
 
-  const createRazorpayOrder = () => {
+  const createRazorpayOrder = async () => {
     let data = JSON.stringify({
       amount: 1 * 100,
       currency: "INR",
@@ -190,7 +199,7 @@ function App() {
       data: data,
     };
 
-    axios
+    await axios
       .request(config)
       .then((response) => {
         handleRazorpayScreen(response.data.amount);
@@ -201,9 +210,13 @@ function App() {
   };
 
   useEffect(() => {
-    setRegistered(localStorage.getItem("registered"));
-    id = localStorage.getItem("studid");
-  }, []);
+    if (id == "" || responseId == "") {
+      setId(localStorage.getItem("studid"));
+      setRegistered(localStorage.getItem("registered"));
+    } else {
+      paymentFetch();
+    }
+  }, [responseId]);
 
   return (
     <div className="App">
@@ -250,7 +263,7 @@ function App() {
           <p>ही सुवर्णसंधी मोफत तुमच्यासाठी उपलब्ध आहे!</p>
           <p>तुमच्या यशस्वी भविष्यासाठी पहिलं पाऊल आम्ही घ्यायला मदत करू. 💡</p>
 
-          {!registered ? (
+          {registered != "Complete" ? (
             <div className="row justify-content-center">
               <h4 className="text-center mt-2">Registration Form</h4>
               <div className="shadow p-4 border mt-4">
@@ -356,7 +369,7 @@ function App() {
             <button
               onClick={() => createRazorpayOrder()}
               className="btn btn-success col-sm-6 m-auto"
-              type="submit"
+              type="button"
             >
               Pay to Confirm
             </button>
