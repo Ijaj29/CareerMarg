@@ -7,10 +7,12 @@ import flasher from "@flasher/flasher";
 
 function App() {
   const [responseId, setResponseId] = React.useState("");
+  console.log('responseId :', responseId);
   const [responseState, setResponseState] = React.useState([]);
   const [registered, setRegistered] = useState("Incomplete");
   console.log("registered :", registered);
   const [id, setId] = useState("");
+  console.log('id :', id);
   const [errors, setError] = useState("");
   const [File, setFile] = useState("");
 
@@ -51,8 +53,10 @@ function App() {
         formData
       );
       if (response.data.error) {
+      console.log('response.data.error :', response.data.error);
         setError(response.data.error);
       } else {
+        console.log('response.data :', response.data);
         setId(response.data._id);
         localStorage.setItem("studid", response.data._id);
         setRegistered("Complete");
