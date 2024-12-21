@@ -57,7 +57,7 @@ function App() {
         setError(response.data.error);
       } else {
         console.log('response.data :', response.data);
-        setId(response.data._id);
+        setId(response.data.data._id);
         localStorage.setItem("studid", response.data.data._id);
         setRegistered("Complete");
         localStorage.setItem("registered", "Complete");
