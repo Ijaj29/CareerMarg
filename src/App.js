@@ -7,12 +7,12 @@ import flasher from "@flasher/flasher";
 
 function App() {
   const [responseId, setResponseId] = React.useState("");
-  console.log('responseId :', responseId);
+  console.log("responseId :", responseId);
   const [responseState, setResponseState] = React.useState([]);
   const [registered, setRegistered] = useState("Incomplete");
   console.log("registered :", registered);
   const [id, setId] = useState("");
-  console.log('id :', id);
+  console.log("id :", id);
   const [errors, setError] = useState("");
   const [File, setFile] = useState("");
 
@@ -53,12 +53,9 @@ function App() {
         formData
       );
       if (response.data.error) {
-      console.log('response.data.error :', response.data.error);
+        console.log("response.data.error :", response.data.error);
         setError(response.data.error);
       } else {
-        console.log('response.data :', response.data);
-        setId(response.data.data._id);
-        localStorage.setItem("studid", response.data.data._id);
         setRegistered("Complete");
         localStorage.setItem("registered", "Complete");
         setFile("");
@@ -68,6 +65,9 @@ function App() {
           mobile: "",
           company: "",
         });
+        console.log("response.data :", response.data.data._id);
+        setId(response.data.data._id);
+        localStorage.setItem("studid", response.data.data._id);
         Swal.fire({
           title: "Registered Successful",
           text: "Make the Payment to confirm seat!",
@@ -154,10 +154,12 @@ function App() {
 
   const handleRazorpayScreen = async (amount) => {
     const res = await loadScript("https:/checkout.razorpay.com/v1/checkout.js");
+    console.log("res :", res);
     if (!res) {
       alert("Some error at razorpay screen loading");
       return;
     }
+
     const options = {
       key: "rzp_live_ojIqx1hLEKLYmC",
       amount: amount,
@@ -215,12 +217,15 @@ function App() {
 
   useEffect(() => {
     if (id == "" || responseId == "") {
-      setId(localStorage.getItem("studid"));
+      let studid = localStorage.getItem("studid");
+      if (studid != undefined && studid != null) {
+        setId(studid);
+      }
       setRegistered(localStorage.getItem("registered"));
     } else {
       paymentFetch();
     }
-  }, [responseId]);
+  }, [responseId, id]);
 
   return (
     <div className="App">
