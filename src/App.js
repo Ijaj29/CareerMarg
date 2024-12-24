@@ -14,6 +14,7 @@ function App() {
   const [id, setId] = useState("");
   console.log("id :", id);
   const [errors, setError] = useState("");
+  const [button, setButton] = useState(false);
   const [File, setFile] = useState("");
 
   const [formInfo, setFormInfo] = useState({
@@ -40,6 +41,7 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setButton(true)
     const formData = new FormData();
     formData.append("studName", formInfo.studName);
     formData.append("email", formInfo.email);
@@ -54,10 +56,12 @@ function App() {
       );
       if (response.data.error) {
         console.log("response.data.error :", response.data.error);
+        setButton(false)
         setError(response.data.error);
       } else {
         setRegistered("Complete");
         localStorage.setItem("registered", "Complete");
+        setButton(false)
         setFile("");
         setFormInfo({
           studName: "",
@@ -84,6 +88,7 @@ function App() {
       }
     } catch (error) {
       console.log(error);
+      setButton(false)
     }
   };
 
@@ -120,7 +125,7 @@ function App() {
     await axios
       .get(`https://student-backend-c616.onrender.com/payment/${responseId}`)
       .then((response) => {
-        setResponseState(response.data);
+        // setResponseState(response.data);
         if (response.data) {
           if (response.data.status == "authorized") {
             alert("Payment Successfully");
@@ -363,13 +368,13 @@ function App() {
                     <div className="mb-3 col-sm-6"></div>
                     <div className="mb-3 col-sm-3"></div>
 
-                    <button className="btn btn-success col-sm-6" type="submit">
+                    <button className="btn btn-success col-sm-6" disabled={button} type="submit">
                       आजच नाव बुक करा
                     </button>
                     <div className="mb-3 col-sm-3"></div>
                   </div>
                   <p className="text-danger">
-                    {typeof errors == "string" && errors}
+                    {typeof button == "string" && errors}
                   </p>
                 </form>
               </div>
